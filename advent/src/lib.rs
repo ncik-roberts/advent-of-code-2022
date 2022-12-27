@@ -7,7 +7,7 @@ use std::io::{self, BufRead};
 use std::iter::Map;
 
 pub struct HowToParse<T> {
-    how_to_parse: fn(&Vec<String>) -> T,
+    how_to_parse: fn(&Vec<String>) -> Option<T>,
 }
 
 pub fn invalid_args<Any>(args: &Vec<String>) -> Any {
@@ -17,11 +17,11 @@ pub fn invalid_args<Any>(args: &Vec<String>) -> Any {
 
 pub type LineStream = Map<Lines<BufReader<File>>, fn(Result<String, Error>) -> String>;
 
-fn parse_as_stream(args: &Vec<String>) -> LineStream {
-    let filename = args.first().unwrap_or_else(|| invalid_args(args));
+fn parse_as_stream(args: &Vec<String>) -> Option<LineStream> {
+    let filename = args.first()?;
     let file = File::open(&filename);
     let file = file.unwrap_or_else(|err| panic!("Invalid file: {filename}. {err}"));
-    io::BufReader::new(file).lines().map(|l| l.unwrap())
+    Some(io::BufReader::new(file).lines().map(|l| l.unwrap()))
 }
 
 pub const PARSE_AS_STREAM: HowToParse<LineStream> = HowToParse {
@@ -34,16 +34,17 @@ pub fn of_code<T>(how_to_parse: HowToParse<T>, part1: fn(T) -> (), part2: fn(T) 
     working_args.reverse();
     working_args.pop();
     let cmd = working_args.pop().unwrap_or_else(|| invalid_args(&args));
-    let t = (how_to_parse.how_to_parse)(&working_args);
+    let parse_args = || -> T {
+        (how_to_parse.how_to_parse)(&working_args).unwrap_or_else(|| invalid_args(&args))
+    };
     match &cmd[..] {
-        "part1" => part1(t),
-        "part2" => part2(t),
+        "part1" => part1(parse_args()),
+        "part2" => part2(parse_args()),
         "both" => {
             print!("Part 1: ");
-            part1(t);
+            part1(parse_args());
             print!("Part 2: ");
-            let reparsed_t = (how_to_parse.how_to_parse)(&working_args);
-            part2(reparsed_t);
+            part2(parse_args());
         }
         _ => invalid_args(&args),
     }
