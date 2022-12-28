@@ -24,8 +24,19 @@ fn parse_as_stream(args: &Vec<String>) -> Option<LineStream> {
     Some(io::BufReader::new(file).lines().map(|l| l.unwrap()))
 }
 
+fn parse_as_single_line(args: &Vec<String>) -> Option<String> {
+    let filename = args.first()?;
+    let file = File::open(&filename);
+    let file = file.unwrap_or_else(|err| panic!("Invalid file: {filename}. {err}"));
+    io::BufReader::new(file).lines().next().map(|l| l.unwrap())
+}
+
 pub const PARSE_AS_STREAM: HowToParse<LineStream> = HowToParse {
     how_to_parse: parse_as_stream,
+};
+
+pub const PARSE_AS_SINGLE_LINE: HowToParse<String> = HowToParse {
+    how_to_parse: parse_as_single_line,
 };
 
 pub fn of_code<T>(how_to_parse: HowToParse<T>, part1: fn(T) -> (), part2: fn(T) -> ()) -> () {
