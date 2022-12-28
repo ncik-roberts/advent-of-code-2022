@@ -3,7 +3,7 @@ use std::iter::Peekable;
 
 struct State {
     dir: Vec<String>,
-    dir_sizes: HashMap<String, u64>,
+    dir_sizes: HashMap<String, u32>,
 }
 
 fn new_state() -> State {
@@ -16,7 +16,7 @@ fn new_state() -> State {
 #[derive(Debug)]
 enum LsLine {
     Dir(String),
-    File(u64, String),
+    File(u32, String),
 }
 
 #[derive(Debug)]
@@ -130,8 +130,8 @@ fn produce_state(lines: advent::LineStream) -> State {
 fn part1(lines: advent::LineStream) {
     let state = produce_state(lines);
     let mut total = 0;
-    for key in state.dir_sizes.keys() {
-        let val: u64 = *state.dir_sizes.get(key).unwrap();
+    for val in state.dir_sizes.values() {
+        let val = *val;
         if val <= 100_000 {
             total += val
         }
@@ -139,8 +139,24 @@ fn part1(lines: advent::LineStream) {
     println!("{total}")
 }
 
-fn part2(_lines: advent::LineStream) {
-    ()
+fn part2(lines: advent::LineStream) {
+    let state = produce_state(lines);
+    let total_disk_space = 70_000_000;
+    let needed_disk_space = 30_000_000;
+    let target_disk_space = total_disk_space - needed_disk_space;
+    let used_disk_space = *state.dir_sizes.get("/").unwrap();
+    if used_disk_space < target_disk_space {
+        panic!("uh you're already good")
+    }
+    let goal_directory_size = used_disk_space - target_disk_space;
+    let mut smallest_directory_above_goal = u32::MAX;
+    for val in state.dir_sizes.values() {
+        let val = *val;
+        if val >= goal_directory_size {
+            smallest_directory_above_goal = smallest_directory_above_goal.min(val)
+        }
+    }
+    println!("{smallest_directory_above_goal}")
 }
 
 fn main() {
